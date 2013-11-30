@@ -16,12 +16,11 @@ import (
 var validURL = regexp.MustCompile(`^http(s)?://`)
 
 func main() {
-  scrape("http://24pullrequests.com/")
+  scrape("http://en.wikipedia.org/")
 }
 
 func scrape(url string){
   fmt.Println("downloading", url)
-  cs := make(chan string)
   urls := parse(download(url))
   fmt.Println("got", len(urls))
 
@@ -31,21 +30,15 @@ func scrape(url string){
     wg.Add(1)
     go func(url string) {
       defer wg.Done()
-      http.Get(url)
-      fmt.Println(url)
-      go pull(cs)
-      cs <- url
+      if validURL.MatchString(url) {
+        fmt.Println(url)
+        scrape(url)
+      }
     }(url)
   }
   wg.Wait()
 }
 
-func pull(cs chan string) {
-  s := <-cs
-  if validURL.MatchString(s) {
-    scrape(s)
-  }
-}
 
 func download(url string) string{
   res, err := http.Get(url)
@@ -57,7 +50,6 @@ func download(url string) string{
   if err != nil {
     log.Fatal(err)
   }
-
   s := string(response[:])
   return s
 }
